@@ -8,6 +8,7 @@ import ChildProfileCard from '../components/ChildProfileCard';
 import LevelProgress from '../components/LevelProgress';
 import OutcomeCard from '../components/OutcomeCard';
 import PersonalBest from '../components/PersonalBest';
+import ProgressRing from '../components/ProgressRing';
 import { EmptyState, ErrorState, ScoreCard, Spinner } from '../components/ScoreCard';
 import StreakCard from '../components/StreakCard';
 import { useApp } from '../context/AppContext';
@@ -21,8 +22,12 @@ function greeting(): string {
   return 'Good evening';
 }
 
+const FOCUS_CHALLENGE: Record<OutcomeKey, string> = {
+  stronger: 'power-pulse', fitter: 'endurance-quest', faster: 'reaction-rush', champs: 'balance-master',
+};
+
 export default function Dashboard() {
-  const { child, detail, scores, setScores } = useApp();
+  const { child, detail, scores, setScores, isAdult, viewRole } = useApp();
   const [challenges, setChallenges] = useState<ChallengeDef[]>([]);
   const [coach, setCoach] = useState<CoachResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -46,37 +51,59 @@ export default function Dashboard() {
   if (err && !challenges.length) return <ErrorState message={err} onRetry={() => window.location.reload()} />;
 
   const keys: OutcomeKey[] = ['stronger', 'fitter', 'faster', 'champs'];
-  const trends: Record<OutcomeKey, number> = { stronger: 7, fitter: 15, faster: 10, champs: 21 };
-  const today = challenges.find((c) => c.id === 'reaction-rush') || challenges[0];
+  const weakest = keys.reduce((a, b) => (scores[a] <= scores[b] ? a : b));
+  const assigned = detail.assignedChallenge;
+  const today = challenges.find((c) => c.id === (assigned?.challengeId || FOCUS_CHALLENGE[weakest])) || challenges[0];
   const bestPb = [...detail.personalBests].sort((a, b) => b.score - a.score)[0];
+  const weeklyMin = detail.recentAttempts.length * 8;
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-3xl sm:text-4xl font-extrabold">
-          {greeting()}, {child.name}! 👋
+          {isAdult ? `${greeting()}, ${child.name}.` : `${greeting()}, ${child.name}! 👋`}
         </h1>
-        <p className="mt-1 font-semibold text-slate-500">Ready to get better today? Your streak is on fire.</p>
+        <p className="mt-1 font-semibold text-slate-500">
+          {isAdult ? 'Your progress at a glance. Beat your own best — that’s the game.' : 'Ready to get better today? Your streak is on fire.'}
+        </p>
       </motion.div>
 
-      <section aria-label="Your KIVO journey">
-        <h2 className="mb-3 font-display text-xl font-extrabold">YOUR KIVO JOURNEY</h2>
+      {/* KIVO SCORE */}
+      <section className="kivo-card flex items-center gap-5" aria-label="KIVO score">
+        <ProgressRing value={detail.kivoScore} size={110} label="KIVO" />
+        <div className="min-w-0">
+          <h2 className="font-display text-xl font-extrabold">{isAdult ? 'PERFORMANCE' : 'YOUR KIVO JOURNEY'}</h2>
+          <p className="text-sm font-semibold text-slate-500">
+            KIVO Score <strong className="text-ink">{detail.kivoScore}/100</strong> — your age doesn't define your potential. Your progress does.
+          </p>
+          {isAdult && (
+            <p className="mt-1 text-sm font-bold text-slate-600">Weekly activity {weeklyMin} min · 🔥 {detail.streak.currentDays}-day streak</p>
+          )}
+        </div>
+      </section>
+
+      <section aria-label="Outcomes">
         <div className="grid gap-4 sm:grid-cols-2">
           {keys.map((k) => (
-            <OutcomeCard key={k} k={k} score={scores[k]} trend={child.id === 'c_aarav' ? trends[k] : undefined} />
+            <OutcomeCard key={k} k={k} score={scores[k]} trend={detail.changes[k]} />
           ))}
         </div>
       </section>
 
       {today && (
         <section className="kivo-card bg-gradient-to-r from-kivo-700 to-kivo-900 !text-white border-0" aria-label="Today's challenge">
-          <p className="font-display text-sm font-extrabold uppercase tracking-widest text-kivo-200">Today's challenge</p>
+          <p className="font-display text-sm font-extrabold uppercase tracking-widest text-kivo-200">
+            {isAdult ? "Today's training" : "Today's challenge"}
+          </p>
           <h2 className="mt-1 font-display text-2xl sm:text-3xl font-extrabold">
-            {today.id === 'reaction-rush' ? 'Improve your reaction speed.' : `Time to conquer ${today.name}.`}
+            {assigned ? `Coach assigned: ${today.name}` : today.id === 'reaction-rush' ? 'Improve your reaction speed.' : `Time to conquer ${today.name}.`}
           </h2>
-          <p className="mt-1 text-sm text-white/75">{today.description}</p>
+          <p className="mt-1 text-sm text-white/75">
+            {assigned?.note || today.description}
+            {isAdult ? '' : " Let's beat your personal best!"}
+          </p>
           <Link to={`/challenge/${today.id}`} className="kivo-btn-ghost mt-4 !bg-amber-400 !text-ink hover:!bg-amber-300">
-            START CHALLENGE <ArrowRight size={18} aria-hidden="true" />
+            {isAdult ? 'START →' : 'START CHALLENGE →'} <ArrowRight size={18} aria-hidden="true" className="hidden" />
           </Link>
         </section>
       )}
@@ -87,7 +114,19 @@ export default function Dashboard() {
         {bestPb ? <PersonalBest pb={bestPb} /> : <EmptyState title="No personal best yet" hint="Finish a challenge to set one!" />}
       </div>
 
-      {coach && <AIInsightCard text={coach.encouragement} compact />}
+      {coach && (
+        <section aria-label="KIVO coach preview">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-display text-xl font-extrabold">KIVO COACH</h2>
+            <Link to="/coach" className="inline-flex items-center gap-1 text-sm font-bold text-kivo-600 hover:underline">
+              <Sparkles size={15} aria-hidden="true" /> {isAdult ? 'View training plan →' : 'Ask KIVO Coach →'}
+            </Link>
+          </div>
+          <AIInsightCard text={isAdult
+            ? `Your ${coach.strongestArea.toUpperCase()} score is ${scores[coach.strongestArea]}/100. Focus: ${coach.weakestArea.toUpperCase()} at ${scores[coach.weakestArea]}/100.`
+            : coach.encouragement} compact />
+        </section>
+      )}
 
       <section aria-label="Recent achievements">
         <div className="mb-3 flex items-center justify-between">
@@ -108,13 +147,13 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-3">
         <ScoreCard label="Level" value={`Lv.${detail.level}`} sub={`${detail.xpTotal} XP total`} />
         <ScoreCard label="Current streak" value={`${detail.streak.currentDays}🔥`} sub={`Best: ${detail.streak.longestDays} days`} accent="#F59E0B" />
-        <ScoreCard label="Challenges" value={`${detail.recentAttempts.length}`} sub="recent sessions" accent="#8B5CF6" />
+        <ScoreCard label={isAdult ? 'Personal best' : 'Challenges'} value={bestPb ? bestPb.metricValue : `${detail.recentAttempts.length}`} sub={bestPb ? bestPb.challengeName : 'recent sessions'} accent="#8B5CF6" />
       </div>
 
       <ChildProfileCard child={child} />
-      <Link to="/coach" className="inline-flex items-center gap-2 text-sm font-bold text-kivo-600 hover:underline">
-        <Sparkles size={15} aria-hidden="true" /> Get today's plan from KIVO Coach
-      </Link>
+      {viewRole === 'child' && (
+        <p className="text-xs text-slate-400">Your parent manages your profile and can see your progress anytime. Beat your own best — that's the game. 🎮</p>
+      )}
     </div>
   );
 }

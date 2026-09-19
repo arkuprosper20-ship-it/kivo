@@ -5,6 +5,7 @@ import * as children from '../controllers/children.controller';
 import * as challenges from '../controllers/challenges.controller';
 import * as ai from '../controllers/ai.controller';
 import * as demo from '../controllers/demo.controller';
+import * as coach from '../controllers/coach.controller';
 import { attachUser, requireAuth } from '../middleware/auth';
 
 export function buildRouter(): Router {
@@ -14,6 +15,7 @@ export function buildRouter(): Router {
 
   // auth (public)
   r.post('/auth/signup', asyncRoute(auth.signup));
+  r.post('/auth/signup-parent', asyncRoute(auth.signupParent));
   r.post('/auth/login', asyncRoute(auth.login));
   r.post('/auth/demo', asyncRoute(auth.demo));
 
@@ -38,6 +40,11 @@ export function buildRouter(): Router {
 
   r.post('/ai/coach', asyncRoute(ai.coach));
   r.post('/ai/workout', asyncRoute(ai.workout));
+
+  // coach ecosystem (permission-checked inside controllers)
+  r.get('/coach/athletes', asyncRoute(coach.getAthletes));
+  r.post('/coach/grant', asyncRoute(coach.grantAccess));
+  r.post('/coach/assign', asyncRoute(coach.assign));
 
   r.post('/demo/reset', asyncRoute(demo.resetDemo));
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import KivoLogo from '../components/KivoLogo';
 import { Spinner } from '../components/ScoreCard';
-import { useApp } from '../context/AppContext';
+import { useApp, type DemoPersona } from '../context/AppContext';
 
 export default function Landing() {
   const { user, loginDemo, authError, loading } = useApp();
@@ -14,11 +14,20 @@ export default function Landing() {
   if (loading) return <div className="mx-auto max-w-6xl p-10"><Spinner label="Loading KIVO…" /></div>;
   if (user) { nav('/dashboard'); return null; }
 
-  const demo = async () => {
+  const demo = async (persona: DemoPersona = 'child') => {
     setBusy(true);
-    try { await loginDemo(); nav('/dashboard'); } catch { /* error shown below */ }
+    try { await loginDemo(persona); nav(persona === 'coach' ? '/coach-dash' : persona === 'parent' ? '/parent' : '/dashboard'); }
+    catch { /* error shown below */ }
     finally { setBusy(false); }
   };
+
+  const PERSONAS: Array<{ id: DemoPersona; icon: string; label: string; hint: string }> = [
+    { id: 'child', icon: '🧒', label: 'Aarav · 10', hint: 'Child journey' },
+    { id: 'teen', icon: '🧑‍🎤', label: 'Riya · 17', hint: 'Independent teen' },
+    { id: 'adult', icon: '🏃', label: 'Alex · 28', hint: 'Adult training' },
+    { id: 'parent', icon: '👨‍👩‍👧', label: 'Parent', hint: '2 children' },
+    { id: 'coach', icon: '📋', label: 'Coach', hint: '3 athletes' },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-kivo-900 via-kivo-700 to-kivo-600 text-white">
@@ -47,15 +56,28 @@ export default function Landing() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           className="mx-auto mt-9 flex max-w-md flex-col gap-3"
         >
-          <button onClick={demo} className="kivo-btn-ghost !bg-amber-400 !text-ink hover:!bg-amber-300 text-lg" disabled={busy}>
+          <button onClick={() => void demo('child')} className="kivo-btn-ghost !bg-amber-400 !text-ink hover:!bg-amber-300 text-lg" disabled={busy}>
             Continue as Demo <ArrowRight size={20} aria-hidden="true" />
           </button>
+          <div className="grid grid-cols-5 gap-2" role="group" aria-label="Demo personas">
+            {PERSONAS.map((p) => (
+              <button
+                key={p.id} onClick={() => void demo(p.id)} disabled={busy}
+                className="rounded-2xl bg-white/10 p-2 backdrop-blur transition-all hover:bg-white/20 disabled:opacity-50"
+                title={`${p.label} — ${p.hint}`}
+              >
+                <span className="block text-2xl" aria-hidden="true">{p.icon}</span>
+                <span className="block text-[11px] font-bold leading-tight">{p.label}</span>
+                <span className="block text-[10px] text-white/60 leading-tight">{p.hint}</span>
+              </button>
+            ))}
+          </div>
           <div className="flex gap-3">
             <Link to="/login" className="kivo-btn-ghost flex-1 !bg-white/15 !text-white !shadow-none hover:!bg-white/25">Log in</Link>
             <Link to="/signup" className="kivo-btn-ghost flex-1 !bg-white/15 !text-white !shadow-none hover:!bg-white/25">Sign up</Link>
           </div>
           {authError && <p className="rounded-2xl bg-red-500/20 p-3 text-sm font-semibold" role="alert">{authError}</p>}
-          <p className="text-xs text-white/60">Demo loads Aarav (10) with a full week of progress — no account needed.</p>
+          <p className="text-xs text-white/60">Five demo personas — no account needed. Your age doesn't define your potential. Your progress does.</p>
         </motion.div>
 
         <div className="mx-auto mt-14 grid max-w-4xl gap-4 text-left sm:grid-cols-4">

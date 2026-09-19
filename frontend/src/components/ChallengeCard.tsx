@@ -7,6 +7,9 @@ const ACCENT: Record<string, string> = {
   'rope-rush': 'from-green-500 to-emerald-600',
   'reaction-rush': 'from-amber-400 to-orange-500',
   'agility-command': 'from-violet-500 to-purple-700',
+  'power-pulse': 'from-blue-500 to-indigo-700',
+  'endurance-quest': 'from-teal-400 to-cyan-600',
+  'balance-master': 'from-fuchsia-500 to-purple-700',
 };
 
 export default function ChallengeCard({ c, best }: { c: ChallengeDef; best?: number }) {

@@ -22,6 +22,12 @@ export function updateOutcomes(
     bump('faster', primary); bump('champs', 3); bump('fitter', 2); bump('stronger', 1);
   } else if (challengeId === 'agility-command') {
     bump('champs', primary); bump('faster', 2); bump('fitter', 2); bump('stronger', 1);
+  } else if (challengeId === 'power-pulse') {
+    bump('stronger', primary); bump('champs', 3); bump('fitter', 2); bump('faster', 1);
+  } else if (challengeId === 'endurance-quest') {
+    bump('fitter', primary); bump('champs', 3); bump('stronger', 2); bump('faster', 1);
+  } else if (challengeId === 'balance-master') {
+    bump('champs', primary); bump('stronger', 2); bump('fitter', 1); bump('faster', 1);
   } else {
     bump('champs', 2);
   }

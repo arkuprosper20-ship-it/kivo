@@ -1,7 +1,7 @@
 import type { CoachResponse, OutcomeKey, WorkoutBlock } from '../../types';
 
 const AREAS: OutcomeKey[] = ['stronger', 'fitter', 'faster', 'champs'];
-const CHALLENGES = ['rope-rush', 'reaction-rush', 'agility-command'];
+const CHALLENGES = ['rope-rush', 'reaction-rush', 'agility-command', 'power-pulse', 'endurance-quest', 'balance-master'];
 const BANNED = /(diagnos|disease|disorder|injury|medical condition|treatment|prescrib|syndrome|therapy)/i;
 
 function cleanText(v: unknown, fallback: string, max = 280): string {
@@ -35,6 +35,7 @@ export function validateCoachJson(raw: string): Omit<CoachResponse, 'source'> | 
       recommendation: cleanText(o.recommendation, 'Your activity score suggests mixing one extra endurance round this week.'),
       nextChallenge: o.nextChallenge,
       difficulty: cleanText(o.difficulty, 'Level 2 — steady and consistent', 120),
+      reason: cleanText(o.reason, 'Built from your strongest and weakest outcomes plus this week’s activity.', 400),
       workout,
     };
   } catch {

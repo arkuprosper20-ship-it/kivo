@@ -1,4 +1,4 @@
-import type { Attempt, Badge, ChallengeDef, Child, OutcomeScores, Streak, User } from '../../types';
+import type { Assignment, Attempt, Badge, ChallengeDef, Child, OutcomeScores, Streak, User } from '../../types';
 import { CHALLENGES } from './challenges';
 import { seedDemo } from './seed';
 import type { Store } from './index';
@@ -13,8 +13,11 @@ export class MemoryStore implements Store {
   attempts = new Map<string, Attempt[]>(); // by childId
   badges = new Map<string, Badge[]>(); // by childId
   progress = new Map<string, OutcomeScores>();
+  baseline = new Map<string, OutcomeScores>();
   streaks = new Map<string, Streak>();
   xp = new Map<string, number>();
+  perms = new Map<string, Set<string>>(); // coachId -> profileIds
+  assignments = new Map<string, Assignment>(); // profileId -> assignment (latest)
 
   constructor() {
     seedDemo(this);
@@ -38,7 +41,7 @@ export class MemoryStore implements Store {
   }
 
   async createChild(c: Omit<Child, 'id' | 'createdAt'>): Promise<Child> {
-    const child: Child = { ...c, id: uid('c'), createdAt: new Date().toISOString() };
+    const child: Child = { ...c, kind: c.kind || 'child', goals: c.goals || [], id: uid('c'), createdAt: new Date().toISOString() };
     this.children.set(child.id, child);
     this.progress.set(child.id, { stronger: 40, fitter: 40, faster: 40, champs: 40 });
     const today = new Date().toISOString().slice(0, 10);
@@ -64,8 +67,19 @@ export class MemoryStore implements Store {
     return this.progress.get(childId) || { stronger: 40, fitter: 40, faster: 40, champs: 40 };
   }
   async setProgress(childId: string, scores: OutcomeScores) {
+    // First write also establishes the baseline for change indicators.
+    if (!this.baseline.has(childId) && this.children.has(childId)) {
+      const hasAttempts = (this.attempts.get(childId) || []).length > 0;
+      if (!hasAttempts) this.baseline.set(childId, { ...scores });
+    }
     this.progress.set(childId, { ...scores });
     return { ...scores };
+  }
+  async getBaseline(childId: string): Promise<OutcomeScores | null> {
+    return this.baseline.get(childId) || null;
+  }
+  async setBaseline(childId: string, scores: OutcomeScores): Promise<void> {
+    this.baseline.set(childId, { ...scores });
   }
 
   async listChallenges(): Promise<ChallengeDef[]> { return CHALLENGES; }
@@ -110,7 +124,28 @@ export class MemoryStore implements Store {
 
   async resetDemo() {
     this.users.clear(); this.children.clear(); this.attempts.clear();
-    this.badges.clear(); this.progress.clear(); this.streaks.clear(); this.xp.clear();
+    this.badges.clear(); this.progress.clear(); this.baseline.clear();
+    this.streaks.clear(); this.xp.clear(); this.perms.clear(); this.assignments.clear();
     seedDemo(this);
+  }
+
+  async grantCoachAccess(coachId: string, profileId: string): Promise<void> {
+    const set = this.perms.get(coachId) || new Set<string>();
+    set.add(profileId);
+    this.perms.set(coachId, set);
+  }
+  async listAthleteIds(coachId: string): Promise<string[]> {
+    return [...(this.perms.get(coachId) || [])];
+  }
+  async assignChallenge(a: Assignment): Promise<Assignment> {
+    const full = { ...a, createdAt: new Date().toISOString() };
+    this.assignments.set(a.profileId, full);
+    return full;
+  }
+  async getAssignment(profileId: string): Promise<Assignment | null> {
+    return this.assignments.get(profileId) || null;
+  }
+  async listAssignments(coachId: string): Promise<Assignment[]> {
+    return [...this.assignments.values()].filter((a) => a.coachId === coachId);
   }
 }

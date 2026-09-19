@@ -9,8 +9,6 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import type { Attempt, OutcomeKey } from '../types';
 
-const BASELINE: Record<OutcomeKey, number> = { stronger: 62, fitter: 58, faster: 71, champs: 40 };
-
 export default function Progress() {
   const { child, detail } = useApp();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -28,12 +26,12 @@ export default function Progress() {
     if (!detail) return [];
     const keys: OutcomeKey[] = ['stronger', 'fitter', 'faster', 'champs'];
     return keys.map((k) => {
-      const from = child?.id === 'c_aarav' ? BASELINE[k] : 40;
+      const from = detail.baseline[k];
       const to = detail.progress[k];
       const pct = from > 0 ? Math.round(((to - from) / from) * 100) : 0;
       return { key: k, from, to, pct };
     });
-  }, [detail, child]);
+  }, [detail]);
 
   if (err) return <ErrorState message={err} onRetry={() => window.location.reload()} />;
   if (!detail || !child) return <Spinner label="Loading progress…" />;

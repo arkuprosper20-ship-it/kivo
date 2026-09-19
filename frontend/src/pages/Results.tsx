@@ -29,13 +29,26 @@ function metricRows(r: { challengeId: string; raw: Record<string, number> }): Ar
     return [['Jumps', `${r.raw.jumps} jumps`], ['Time', `${r.raw.durationSec}s`], ['Consistency', `${r.raw.consistency ?? '—'}%`]];
   if (r.challengeId === 'reaction-rush')
     return [['Reaction', `${((r.raw.avgMs || 0) / 1000).toFixed(2)} sec`], ['Accuracy', `${r.raw.accuracy}%`], ['Hits', `${r.raw.hits}/${r.raw.rounds || 10}`]];
+  if (r.challengeId === 'power-pulse')
+    return [['Power reps', `${r.raw.reps} reps`], ['Time', `${r.raw.durationSec}s`], ['Rate', `${Math.round(((r.raw.reps || 0) / Math.max(1, r.raw.durationSec || 30)) * 60)}/min`]];
+  if (r.challengeId === 'endurance-quest')
+    return [['Steps', `${r.raw.steps} steps`], ['Time', `${r.raw.durationSec}s`], ['Errors', `${r.raw.errors}`]];
+  if (r.challengeId === 'balance-master')
+    return [['Timing error', `${r.raw.avgErrorMs}ms`], ['Accuracy', `${r.raw.accuracy}%`], ['Poses', `${r.raw.roundsCompleted || 3}/3`]];
   return [['Completion time', `${r.raw.seconds} sec`], ['Accuracy', `${r.raw.accuracy}%`], ['Errors', `${r.raw.errors}`]];
 }
 
+// Weakest-outcome -> recommended next challenge (mirrors backend coach mapping)
+const NEXT_FOR_OUTCOME: Record<string, string> = {
+  stronger: 'power-pulse', fitter: 'endurance-quest', faster: 'reaction-rush', champs: 'balance-master',
+};
 const NEXT: Record<string, string> = {
   'rope-rush': 'reaction-rush',
   'reaction-rush': 'agility-command',
-  'agility-command': 'rope-rush',
+  'agility-command': 'power-pulse',
+  'power-pulse': 'endurance-quest',
+  'endurance-quest': 'balance-master',
+  'balance-master': 'rope-rush',
 };
 
 export default function Results() {
@@ -64,6 +77,9 @@ export default function Results() {
   const rows = metricRows({ challengeId: r.attempt.challengeId, raw: r.attempt.raw as Record<string, number> });
   const prevRows = prev ? metricRows({ challengeId: prev.challengeId, raw: prev.raw as Record<string, number> }) : null;
   const party = (r.leveledUp || r.badgesUnlocked.length > 0) && showParty;
+  // Next recommendation: weakest outcome after this result
+  const weakest = (Object.keys(r.progress) as Array<keyof typeof r.progress>).reduce((a, b) => (r.progress[a] <= r.progress[b] ? a : b));
+  const nextId = NEXT_FOR_OUTCOME[weakest] === r.attempt.challengeId ? NEXT[r.attempt.challengeId] : NEXT_FOR_OUTCOME[weakest];
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -87,6 +103,9 @@ export default function Results() {
             ▲ +{r.improvement}% vs your last try
           </p>
         )}
+        <p className="mx-auto mt-2 block text-xs font-bold text-slate-500">
+          Adaptive difficulty: {r.difficultyLabel}
+        </p>
       </motion.div>
 
       {r.isPersonalBest && (
@@ -119,13 +138,23 @@ export default function Results() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Link to={`/challenge/${NEXT[r.attempt.challengeId] || 'reaction-rush'}`} className="kivo-btn-primary flex-1"
+        <Link to={`/challenge/${nextId || 'reaction-rush'}`} className="kivo-btn-primary flex-1"
           onClick={() => setLastResult(null)}>
-          NEXT CHALLENGE <ArrowRight size={18} aria-hidden="true" />
+          START NEXT <ArrowRight size={18} aria-hidden="true" />
         </Link>
         <Link to="/coach" className="kivo-btn-ghost flex-1">
           <Sparkles size={18} aria-hidden="true" /> ASK KIVO COACH
         </Link>
+      </div>
+
+      <div className="kivo-card border-2 border-kivo-100 bg-gradient-to-br from-kivo-50 to-white">
+        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-kivo-700">Next recommendation</p>
+        <p className="mt-1 text-sm font-medium text-slate-700">
+          {r.improvement > 0
+            ? `Your ${r.attempt.challengeId.replace('-', ' ')} is improving (+${r.improvement}%). ${r.difficultyLabel}.`
+            : `${r.difficultyLabel}.`}{' '}
+          KIVO suggests <strong className="capitalize">{(nextId || '').replace('-', ' ')}</strong> next to grow your weakest area.
+        </p>
       </div>
     </div>
   );

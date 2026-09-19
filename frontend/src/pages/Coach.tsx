@@ -10,7 +10,7 @@ import { api } from '../services/api';
 import type { CoachResponse, WorkoutBlock } from '../types';
 
 export default function Coach() {
-  const { child, lastResult } = useApp();
+  const { child, lastResult, isAdult } = useApp();
   const [coach, setCoach] = useState<CoachResponse | null>(null);
   const [plan, setPlan] = useState<WorkoutBlock[] | null>(null);
   const [planSource, setPlanSource] = useState<string>('');
@@ -51,9 +51,9 @@ export default function Coach() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-extrabold">AI Coach 🤖</h1>
+        <h1 className="font-display text-3xl font-extrabold">{isAdult ? 'AI Coach 📊' : 'AI Coach 🤖'}</h1>
         <p className="mt-1 font-semibold text-slate-500">
-          Personalized for {child.name} · {coach.source === 'llm' ? 'live AI' : 'KIVO built-in brain'}
+          {isAdult ? `Performance coaching for ${child.name}` : `Personalized for ${child.name}`} · {coach.source === 'llm' ? 'live AI' : 'KIVO built-in brain'}
         </p>
       </div>
 
@@ -77,6 +77,11 @@ export default function Coach() {
 
       <AIInsightCard text={coach.recommendation} />
 
+      <div className="kivo-card border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-amber-700">Why this plan?</p>
+        <p className="mt-2 text-[15px] font-medium leading-relaxed text-slate-700">{coach.reason}</p>
+      </div>
+
       <div className="kivo-card">
         <p className="font-display text-sm font-extrabold uppercase tracking-widest text-slate-500">Next challenge · {coach.difficulty}</p>
         <div className="mt-2 flex items-center justify-between gap-3">
@@ -90,7 +95,7 @@ export default function Coach() {
       <section aria-label="Today's plan">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-display text-xl font-extrabold">
-            <Dumbbell size={20} aria-hidden="true" /> Today's 10-minute plan
+            <Dumbbell size={20} aria-hidden="true" /> {isAdult ? "Today's training" : "Today's 10-minute plan"}
           </h2>
           <button onClick={regen} disabled={loadingPlan} className="text-sm font-bold text-kivo-600 hover:underline disabled:opacity-50">
             {loadingPlan ? 'Planning…' : 'Regenerate'}

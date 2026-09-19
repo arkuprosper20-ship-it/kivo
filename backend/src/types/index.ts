@@ -1,25 +1,32 @@
 // Shared KIVO domain types (backend source of truth).
 
-export type Role = 'parent' | 'child' | 'coach';
+export type Role = 'parent' | 'individual' | 'coach';
+export type ViewRole = 'child' | 'parent' | 'individual' | 'coach';
 export type OutcomeKey = 'stronger' | 'fitter' | 'faster' | 'champs';
 export type Category = 'STRONGER' | 'FITTER' | 'FASTER' | 'CHAMPS';
+export type ProfileKind = 'child' | 'individual';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: Role;
+  dob?: string; // YYYY-MM-DD
   createdAt: string;
 }
 
 export interface Child {
   id: string;
-  parentId: string;
+  parentId: string; // guardian user id (also set for individuals for guardian view)
+  ownerUserId?: string; // set for independent (16+) profiles: the user who owns it
+  kind: ProfileKind; // 'child' = parent-managed (<16), 'individual' = self-managed (16+)
   name: string;
   age: number;
+  dob?: string; // YYYY-MM-DD
   height: number;
   fitnessLevel: string;
   favoriteActivities: string[];
+  goals: string[];
   avatarColor: string;
   createdAt: string;
 }
@@ -96,6 +103,8 @@ export interface CompleteResult {
   badgesUnlocked: Badge[];
   progress: OutcomeScores;
   streak: Streak;
+  difficulty: 'up' | 'same' | 'down';
+  difficultyLabel: string;
 }
 
 export interface WorkoutBlock {
@@ -112,12 +121,16 @@ export interface CoachResponse {
   nextChallenge: string;
   difficulty: string;
   workout: WorkoutBlock[];
+  reason: string; // WHY this plan — explainable recommendation
   source: 'llm' | 'deterministic';
 }
 
 export interface ChildDetail {
   child: Child;
   progress: OutcomeScores;
+  baseline: OutcomeScores;
+  changes: Record<OutcomeKey, number>; // current - baseline
+  kivoScore: number;
   streak: Streak;
   xpTotal: number;
   level: number;
@@ -125,4 +138,20 @@ export interface ChildDetail {
   badges: Badge[];
   personalBests: PersonalBest[];
   recentAttempts: Attempt[];
+  assignedChallenge?: Assignment | null;
+}
+
+export interface Assignment {
+  coachId: string;
+  profileId: string;
+  challengeId: string;
+  note: string;
+  createdAt: string;
+}
+
+export interface BadgeProgress {
+  name: string;
+  current: number;
+  target: number;
+  earned: boolean;
 }

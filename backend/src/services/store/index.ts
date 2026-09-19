@@ -1,4 +1,4 @@
-import type { Attempt, Badge, ChallengeDef, Child, OutcomeScores, Streak, User } from '../../types';
+import type { Assignment, Attempt, Badge, ChallengeDef, Child, OutcomeScores, Streak, User } from '../../types';
 
 /** Storage abstraction. Memory store is default; Supabase activates via env. */
 export interface Store {
@@ -15,6 +15,9 @@ export interface Store {
   // progress
   getProgress(childId: string): Promise<OutcomeScores>;
   setProgress(childId: string, scores: OutcomeScores): Promise<OutcomeScores>;
+  // baseline (initial scores for change indicators)
+  getBaseline(childId: string): Promise<OutcomeScores | null>;
+  setBaseline(childId: string, scores: OutcomeScores): Promise<void>;
   // challenges (static catalogue, but kept behind store for symmetry)
   listChallenges(): Promise<ChallengeDef[]>;
   getChallenge(id: string): Promise<ChallengeDef | null>;
@@ -31,4 +34,10 @@ export interface Store {
   addXp(childId: string, amount: number): Promise<number>;
   // demo
   resetDemo(): Promise<void>;
+  // coach permissions + assignments
+  grantCoachAccess(coachId: string, profileId: string): Promise<void>;
+  listAthleteIds(coachId: string): Promise<string[]>;
+  assignChallenge(a: Assignment): Promise<Assignment>;
+  getAssignment(profileId: string): Promise<Assignment | null>;
+  listAssignments(coachId: string): Promise<Assignment[]>;
 }

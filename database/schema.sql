@@ -1,4 +1,4 @@
--- KIVO Supabase / PostgreSQL schema.
+-- KIVO Supabase / PostgreSQL schema (age-aware model).
 -- Run in the Supabase SQL editor. The backend works without it
 -- (seeded in-memory store) and activates Supabase automatically when
 -- SUPABASE_URL + SUPABASE_SERVICE_KEY are set.
@@ -7,23 +7,44 @@ create table if not exists users (
   id text primary key,
   name text not null,
   email text not null unique,
-  role text not null check (role in ('parent','child','coach')),
+  date_of_birth date,
+  role text not null check (role in ('parent','individual','coach')),
   password_hash text,
   created_at timestamptz not null default now()
 );
 
+-- Child + independent profiles (one row per athlete; guardian link via parent_id)
 create table if not exists children (
   id text primary key,
   parent_id text not null references users(id) on delete cascade,
+  owner_user_id text references users(id) on delete set null,
+  kind text not null default 'child' check (kind in ('child','individual')),
   name text not null,
-  age int not null check (age between 5 and 16),
+  age int not null check (age between 5 and 99),
+  date_of_birth date,
   height int not null default 120,
   fitness_level text not null default 'Beginner',
   favorite_activities text[] not null default '{}',
+  goals text[] not null default '{}',
   avatar_color text not null default '#2563EB',
   created_at timestamptz not null default now()
 );
 create index if not exists children_parent_idx on children(parent_id);
+
+create table if not exists coach_profiles (
+  id text primary key,
+  user_id text not null unique references users(id) on delete cascade,
+  specialization text not null default 'Youth athletics',
+  created_at timestamptz not null default now()
+);
+
+-- Explicit athlete permission grants for coaches
+create table if not exists coach_athletes (
+  coach_id text not null references users(id) on delete cascade,
+  athlete_id text not null references children(id) on delete cascade,
+  granted_at timestamptz not null default now(),
+  primary key (coach_id, athlete_id)
+);
 
 create table if not exists challenges (
   id text primary key,
@@ -53,6 +74,10 @@ create table if not exists progress (
   fitter_score int not null default 40,
   faster_score int not null default 40,
   champs_score int not null default 40,
+  baseline_stronger int,
+  baseline_fitter int,
+  baseline_faster int,
+  baseline_champs int,
   updated_at timestamptz not null default now()
 );
 
@@ -77,6 +102,15 @@ create table if not exists xp (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists assignments (
+  id bigint generated always as identity primary key,
+  coach_id text not null references users(id) on delete cascade,
+  profile_id text not null references children(id) on delete cascade,
+  challenge_id text not null references challenges(id),
+  note text not null default '',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists ai_recommendations (
   id text primary key,
   child_id text not null references children(id) on delete cascade,
@@ -89,5 +123,8 @@ create table if not exists ai_recommendations (
 insert into challenges (id, name, category, difficulty, duration, description) values
   ('rope-rush','Rope Rush','FITTER','L1–L5','60s','Complete as many jumps as possible in 60 seconds.'),
   ('reaction-rush','Reaction Rush','FASTER','Adaptive','~45s','Tap the glowing pod as fast as you can.'),
-  ('agility-command','Agility Command','CHAMPS','Progressive','~60s','Follow the station sequence in order.')
+  ('agility-command','Agility Command','CHAMPS','Progressive','~60s','Follow the station sequence in order.'),
+  ('power-pulse','Power Pulse','STRONGER','L1–L5','30s','Maximum power taps in 30 seconds.'),
+  ('endurance-quest','Endurance Quest','FITTER','Adaptive','45s','Alternate LEFT / RIGHT step pads.'),
+  ('balance-master','Balance Master','CHAMPS','Progressive','~60s','Hold each pose for exactly the target time.')
 on conflict (id) do nothing;

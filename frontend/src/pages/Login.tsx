@@ -23,9 +23,12 @@ export default function Login() {
     } finally { setBusy(false); }
   };
 
-  const demo = async () => {
+  const demo = async (persona: 'child' | 'teen' | 'adult' | 'parent' | 'coach' = 'child') => {
     setBusy(true); setError(null);
-    try { await loginDemo(); nav('/dashboard'); }
+    try {
+      await loginDemo(persona);
+      nav(persona === 'coach' ? '/coach-dash' : persona === 'parent' ? '/parent' : '/dashboard');
+    }
     catch (err: any) { setError(err?.message || 'Demo login failed'); }
     finally { setBusy(false); }
   };
@@ -45,7 +48,14 @@ export default function Login() {
         </div>
         {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-600" role="alert">{error}</p>}
         <button className="kivo-btn-primary w-full" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
-        <button type="button" className="kivo-btn-ghost w-full" onClick={demo} disabled={busy}>Continue as Demo</button>
+        <button type="button" className="kivo-btn-ghost w-full" onClick={() => void demo('child')} disabled={busy}>Continue as Demo</button>
+        <div className="flex flex-wrap justify-center gap-2 text-xs font-bold">
+          {(['teen', 'adult', 'parent', 'coach'] as const).map((p) => (
+            <button key={p} type="button" disabled={busy} onClick={() => void demo(p)} className="rounded-full bg-mist px-3 py-1.5 text-slate-600 hover:bg-kivo-100 hover:text-kivo-700 disabled:opacity-50">
+              Demo: {p}
+            </button>
+          ))}
+        </div>
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
         New here? <Link to="/signup" className="font-bold text-kivo-600 hover:underline">Create an account</Link>

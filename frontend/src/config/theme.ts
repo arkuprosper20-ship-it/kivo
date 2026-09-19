@@ -20,8 +20,18 @@ export const badgeLabel = (name: string): { label: string; icon: string } => {
     'endurance-star': { label: 'Endurance Star', icon: '🌀' },
     'agility-ace': { label: 'Agility Ace', icon: '🎯' },
     'personal-best': { label: 'Personal Best', icon: '🏆' },
+    'consistency-champion': { label: 'Consistency Champion', icon: '🎯' },
   };
   return map[name] ?? { label: name, icon: '🎖️' };
 };
 
-export const ALL_BADGES = ['first-challenge', 'streak-7', 'speed-master', 'strength-starter', 'endurance-star', 'agility-ace', 'personal-best'];
+export const ALL_BADGES = ['first-challenge', 'streak-7', 'speed-master', 'strength-starter', 'endurance-star', 'agility-ace', 'personal-best', 'consistency-champion'];
+
+export const GOALS = [
+  { id: 'strength', label: 'Strength', icon: '💪' },
+  { id: 'endurance', label: 'Endurance', icon: '🫁' },
+  { id: 'speed', label: 'Speed', icon: '⚡' },
+  { id: 'agility', label: 'Agility', icon: '🎯' },
+  { id: 'consistency', label: 'Consistency', icon: '🔥' },
+  { id: 'overall', label: 'Overall Athletic Development', icon: '🏆' },
+];

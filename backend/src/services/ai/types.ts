@@ -1,4 +1,5 @@
 import type { Attempt, Child, CoachResponse, OutcomeKey, OutcomeScores, WorkoutBlock } from '../../types';
+import { ageFromDob } from '../../utils/age';
 
 export interface CoachInput {
   child: Child;
@@ -18,3 +19,6 @@ export function strongestAndWeakest(scores: OutcomeScores): { strongest: Outcome
   const sorted = [...entries].sort((a, b) => b[1] - a[1]);
   return { strongest: sorted[0][0], weakest: sorted[sorted.length - 1][0] };
 }
+
+export const ageOf = (child: Child): number => ageFromDob(child.dob, child.age);
+export const isAdultProfile = (child: Child): boolean => ageOf(child) >= 16;

@@ -5,6 +5,9 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import type { ChallengeDef, CompleteResult } from '../types';
 import AgilityGame from '../challenges/AgilityGame';
+import BalanceMaster from '../challenges/BalanceMaster';
+import EnduranceQuest from '../challenges/EnduranceQuest';
+import PowerChallenge from '../challenges/PowerChallenge';
 import ReactionGame from '../challenges/ReactionGame';
 import RopeChallenge from '../challenges/RopeChallenge';
 
@@ -47,6 +50,9 @@ export default function ChallengeDetail() {
       {id === 'rope-rush' && <RopeChallenge onComplete={(raw) => void submit(raw)} />}
       {id === 'reaction-rush' && <ReactionGame onComplete={(raw) => void submit(raw)} />}
       {id === 'agility-command' && <AgilityGame onComplete={(raw) => void submit(raw)} />}
+      {id === 'power-pulse' && <PowerChallenge onComplete={(raw) => void submit(raw)} />}
+      {id === 'endurance-quest' && <EnduranceQuest onComplete={(raw) => void submit(raw)} />}
+      {id === 'balance-master' && <BalanceMaster onComplete={(raw) => void submit(raw)} />}
       {submitting && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/50 p-6" role="status" aria-label="Saving result">
           <div className="kivo-card text-center"><Spinner label="Saving your result…" /></div>

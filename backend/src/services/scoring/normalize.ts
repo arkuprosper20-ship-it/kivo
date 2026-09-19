@@ -32,6 +32,36 @@ export function normalizeAgility(seconds: number, accuracy = 100, errors = 0): n
   return clamp(time * 0.7 + acc * 0.3 - errors * 1.5);
 }
 
+/**
+ * Power Pulse (STRONGER): max power taps in ~30s.
+ * 30s reference: ~65 reps => ~85, 80+ => 95+.
+ */
+export function normalizePower(reps: number, durationSec = 30): number {
+  const perMinute = durationSec > 0 ? (reps / durationSec) * 60 : 0;
+  if (perMinute <= 0) return 5;
+  return clamp(6 + perMinute * 0.68);
+}
+
+/**
+ * Endurance Quest (FITTER): alternating steps, errors penalised.
+ * 45s reference: ~85 steps, few errors => mid-80s.
+ */
+export function normalizeEndurance(steps: number, durationSec = 45, errors = 0): number {
+  const perMinute = durationSec > 0 ? (steps / durationSec) * 60 : 0;
+  if (perMinute <= 0) return 5;
+  return clamp(4 + perMinute * 0.74 - errors * 1.2);
+}
+
+/**
+ * Balance Master (CHAMPS): release timing error in ms (lower better) + accuracy.
+ * ~200ms/94% => ~87, ~500ms/80% => ~66.
+ */
+export function normalizeBalance(avgErrorMs: number, accuracy = 100): number {
+  const timing = 104 - avgErrorMs / 11;
+  const acc = Math.min(100, Math.max(0, accuracy));
+  return clamp(timing * 0.7 + acc * 0.3);
+}
+
 export function calculateScore(challengeId: string, raw: Record<string, number>): number {
   switch (challengeId) {
     case 'rope-rush':
@@ -40,6 +70,12 @@ export function calculateScore(challengeId: string, raw: Record<string, number>)
       return normalizeReaction(raw.avgMs ?? 1200, raw.accuracy ?? 0);
     case 'agility-command':
       return normalizeAgility(raw.seconds ?? 60, raw.accuracy ?? 0, raw.errors ?? 0);
+    case 'power-pulse':
+      return normalizePower(raw.reps || 0, raw.durationSec || 30);
+    case 'endurance-quest':
+      return normalizeEndurance(raw.steps || 0, raw.durationSec || 45, raw.errors || 0);
+    case 'balance-master':
+      return normalizeBalance(raw.avgErrorMs ?? 1500, raw.accuracy ?? 0);
     default:
       return clamp(raw.score || 50);
   }
